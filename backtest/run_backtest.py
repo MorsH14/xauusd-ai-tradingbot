@@ -21,8 +21,9 @@ from config.config import BACKTEST_START, BACKTEST_END, INITIAL_CAPITAL, MODEL_P
 def main():
     logger.info("=== XAUUSD AI Bot Backtest ===")
 
-    # 1. Data
-    ohlcv = fetch_ohlcv(start=BACKTEST_START, end=BACKTEST_END, interval="1H")
+    # 1. Data — use daily bars to match training timeframe
+    # (Yahoo Finance caps hourly to last 730 days; daily gives full history)
+    ohlcv = fetch_ohlcv(start=BACKTEST_START, end=BACKTEST_END, interval="1D")
     try:
         macro = fetch_macro(start=BACKTEST_START, end=BACKTEST_END)
     except Exception as e:

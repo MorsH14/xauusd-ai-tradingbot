@@ -18,11 +18,24 @@ def resample_ohlcv(df: pd.DataFrame, rule: str) -> pd.DataFrame:
     return resampled
 
 
+def _normalize_index(df: pd.DataFrame) -> pd.DataFrame:
+    """Strip timezone info and normalize index to UTC-naive datetime."""
+    idx = df.index
+    if hasattr(idx, "tz") and idx.tz is not None:
+        idx = idx.tz_convert("UTC").tz_localize(None)
+    df = df.copy()
+    df.index = idx
+    return df
+
+
 def merge_macro(ohlcv: pd.DataFrame, macro: pd.DataFrame) -> pd.DataFrame:
     """
     Left-join macro daily data onto intraday OHLCV.
     Forward-fills macro values within each day.
+    Normalizes both indexes to UTC-naive to avoid dtype mismatch errors.
     """
+    ohlcv = _normalize_index(ohlcv)
+    macro = _normalize_index(macro)
     macro_reindexed = macro.reindex(ohlcv.index, method="ffill")
     merged = pd.concat([ohlcv, macro_reindexed], axis=1)
     merged = merged.ffill()
@@ -65,7 +78,8 @@ def validate_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
 
 def prepare_dataset(ohlcv: pd.DataFrame, macro: pd.DataFrame | None = None) -> pd.DataFrame:
     """Full preprocessing pipeline."""
-    df = validate_ohlcv(ohlcv)
+    df = _normalize_index(ohlcv)
+    df = validate_ohlcv(df)
     df = remove_low_volume_sessions(df)
     if macro is not None:
         df = merge_macro(df, macro)
