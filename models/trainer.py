@@ -2,6 +2,10 @@
 End-to-end training pipeline:
   fetch data → build features → train model → evaluate → save
 """
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 from loguru import logger
 from data.fetcher import fetch_ohlcv, fetch_macro
 from data.preprocessor import prepare_dataset
@@ -15,11 +19,15 @@ def run_training(
     end:   str = BACKTEST_END,
     save:  bool = True,
 ) -> dict:
-    """Full training run. Returns evaluation metrics."""
+    """
+    Full training run. Returns evaluation metrics.
+    Uses daily bars for ML training to get maximum history (yfinance
+    restricts hourly data to the last 730 days).
+    """
     logger.info("=== XAUUSD AI Model Training ===")
 
-    # 1. Fetch data
-    ohlcv = fetch_ohlcv(start=start, end=end, interval="1H")
+    # 1. Fetch data — daily bars give us full history back to 2018
+    ohlcv = fetch_ohlcv(start=start, end=end, interval="1D")
     try:
         macro = fetch_macro(start=start, end=end)
     except Exception as e:

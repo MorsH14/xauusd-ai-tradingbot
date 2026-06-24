@@ -25,7 +25,6 @@ XGB_PARAMS = {
     "reg_lambda":        1.0,
     "scale_pos_weight":  1.0,  # Adjust if class imbalance detected
     "eval_metric":       "auc",
-    "use_label_encoder": False,
     "random_state":      42,
     "n_jobs":            -1,
 }
