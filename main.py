@@ -54,16 +54,16 @@ def initialize():
 
 
 def on_new_bar():
-    """Main trading loop — called on every new H1 bar close."""
+    """Main trading loop — called once per day after daily bar closes."""
     global current_trade
 
     now = datetime.now(timezone.utc)
     logger.info(f"New bar: {now.strftime('%Y-%m-%d %H:%M')} UTC")
 
     try:
-        # 1. Fetch latest bars
+        # 1. Fetch latest daily bars — must match training timeframe (D1)
         import MetaTrader5 as mt5
-        df_raw = fetch_mt5_ohlcv(SYMBOL_MT5, mt5.TIMEFRAME_H1, n_bars=500)
+        df_raw = fetch_mt5_ohlcv(SYMBOL_MT5, mt5.TIMEFRAME_D1, n_bars=500)
         df     = prepare_dataset(df_raw)
         df     = build_features(df, include_target=False)
 
@@ -151,9 +151,10 @@ def send_daily_summary():
 def main():
     initialize()
 
-    # Schedule the bot to check every hour at :01 (just after bar close)
-    schedule.every().hour.at(":01").do(on_new_bar)
-    schedule.every().day.at("21:05").do(send_daily_summary)
+    # Gold daily bar closes at 21:00 UTC on most brokers (including Deriv)
+    # Check at 21:05 to ensure the bar is fully closed before reading it
+    schedule.every().day.at("21:05").do(on_new_bar)
+    schedule.every().day.at("21:10").do(send_daily_summary)
 
     logger.info("Bot is running. Press Ctrl+C to stop.")
     on_new_bar()  # Run immediately on start
